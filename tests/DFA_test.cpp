@@ -3,39 +3,26 @@
 #include <iostream>
 #include <vector>
 
-std::ostream& operator<<(std::ostream& out, const DFA<long long, char>& dfa) {
-    for(auto df : dfa.name_map){
-        out << "(" << df.first << ", " << df.second.is_accept() << ") ";
-    }
-    out << "\n";
-    for(auto v : dfa.edge_map){
-        out << (v.first == dfa.start ? "*** " : "") << v.first << ": ";
-        for(auto e : v.second){
-            out << "(" << e.first << ", " << e.second << ") ";
-        }
-        out << "\n";
-    }
-    return out;
-}
-
-std::ostream& operator<<(std::ostream& out, const DFA<std::string, char>& dfa) {
-    for(auto df : dfa.name_map){
-        out << "(" << df.first << ", " << df.second.is_accept() << ") ";
-    }
-    out << "\n";
-    for(auto v : dfa.edge_map){
-        out << (v.first == dfa.start ? "*** " : "") << v.first << ": ";
-        for(auto e : v.second){
-            out << "(" << e.first << ", " << e.second << ") ";
-        }
-        out << "\n";
-    }
-    return out;
-}
+// std::ostream& operator<<(std::ostream& out, const DFA<long long, char>& dfa) {
+//     for(auto df : dfa.name_map){
+//         out << "(" << df.first << ", " << df.second.is_accept() << ") ";
+//     }
+//     out << "\n";
+//     for(auto v : dfa.edge_map){
+//         out << (v.first == dfa.start ? "*** " : "") << v.first << ": ";
+//         for(auto e : v.second){
+//             out << "(" << e.first << ", " << e.second << ") ";
+//         }
+//         out << "\n";
+//     }
+//     return out;
+// }
 
 int main(){
     DFA<std::string, char> dfa = DFA<std::string, char>();
     dfa.add_transition("start", 'm', "m");
+    dfa.add_final_state("start");
+    dfa.add_final_state("m");
     dfa.add_transition("m", 'o', "mo");
     dfa.add_transition("mo", 'n', "monkey");
     dfa.add_transition("mo", 'u', "mou");

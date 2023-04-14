@@ -9,7 +9,9 @@
  * check if the word is in the prefix tree in O(n) time, where n is the # of letters in the search word.
  * 
  */
-class trie : protected DFA<std::string, char> {
+class trie : public DFA<std::string, char> {
+private:
+    std::unordered_set<char> alphabet;
 public:
     /**
      * @brief Construct a new trie object
@@ -27,6 +29,7 @@ public:
     void insert(std::string s){
         std::string acc = "";
         for(char c : s){
+            alphabet.insert(c);
             this->add_transition(acc, c, acc + c);
             acc += c;
         }
@@ -51,5 +54,14 @@ public:
      */
     DFA<std::string, char> operator()(){
         return *this;
+    }
+
+    /**
+     * @brief Get the alphabet set.
+     * 
+     * @return std::unordered_set<char> 
+     */
+    std::unordered_set<char> get_alphabet(){
+        return this->alphabet;
     }
 };

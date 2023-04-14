@@ -8,6 +8,7 @@
 #include <functional>
 #include <iostream>
 #include <iterator>
+#include <list>
 
 typedef long long ll;
 
@@ -79,12 +80,10 @@ namespace std {
     {
         size_t operator()(const std::pair<T, V>& x) const
         {
-            return std::hash<T>{}(x.first) * std::hash<V>{}(x.second);
+            return (std::hash<T>{}(x.first) + 101) ^ std::hash<V>{}(x.second);
         }
     };
 }
-
-
 
 /**
  * @brief Represents a Deterministic-Finite-Automoton (DFA).
@@ -160,6 +159,14 @@ public:
      */
     bool has_transition(N node, V val) override {
         return this->name_map.count(node) && this->edge_map[node].count(val);
+    }
+
+
+    V get_transition(N node1, N node2) {
+        for(auto p : this->edge_map[node1]){
+            if(p.second == node2) return p.first;
+        }
+        throw std::runtime_error("Transition not found!");
     }
 
     /**
@@ -325,6 +332,7 @@ public:
                 if(dfa2.has_transition(next.second, transition)){
                     std::pair<N,N> next_state = {dfa1.next_state(next.first, transition), dfa2.next_state(next.second, transition)};
                     new_dfa.add_transition(next, transition, next_state);
+                    if(dfa1.is_accept(next_state.first) && dfa2.is_accept(next_state.second)) new_dfa.add_final_state(next_state);
                     stk.push_back(next_state);
                 }
             }
@@ -347,24 +355,33 @@ public:
         return accepts;
     }
 
-    // TODO: Complete accept_paths
-    // std::unordered_set<std::vector<V> > accept_paths(){
-    //     std::unordered_set<std::vector<V> > paths;
-    //     std::vector<N> stk{this->get_start()};
-    //     std::unordered_set<N> seen{};
-    //     std::unordered_map<N, vector<V> > path_map;
-    //     path_map[]
-    //     while(stk.size()){
-    //         N next = stk.back(); stk.pop_back();
-    //         if(seen.count(next)) continue;
-    //         if(this->is_accept(next))
-    //             paths.push();
-    //         seen.insert(next.first); // add the state to the seen states.
-    //         for(auto pts : dfa1.transitions(next.first)){
-    //             V transition = pts.first;
-    //         }
-    //     }
-    // }*/
+    /**
+     * @brief Run a simple DFS algorithm on this DFA to find some of the
+     * accept paths (does not find cycle paths). Assume that the DFA is a DAG.
+     * 
+     * @return std::unordered_set<std::vector<V> > 
+     */
+    std::unordered_set<std::vector<V> > accept_paths(){
+        std::unordered_set<std::vector<V> > paths;
+        std::unordered_map<N, N> parent;
+        for(N state : this->states()){
+            for(auto pts : this->transitions(state)){
+                parent[pts.second] = state;
+            }
+        }
+        std::unordered_set<N> accepts = this->accept_states();
+        for(N ac : accepts){
+            N cur = ac;
+            std::list<V> path;
+            while(cur != this->get_start()){
+                // std::cout << "Looking for " << parent[cur] << " -> " << cur;
+                path.push_front(this->get_transition(parent[cur], cur));
+                cur = parent[cur];
+            }
+            paths.insert(std::vector<V>(path.begin(), path.end()));
+        }
+        return paths;
+    }
 
     /**
      * @brief Compresses this DFA into a new DFA with each node name replaced with 
@@ -409,3 +426,33 @@ public:
     friend std::istream& operator>>(std::istream& os, const DFA<N, V>& dt);
 };
 
+// Standard output for compressed DFA:
+std::ostream& operator<<(std::ostream& out, const DFA<long long, char>& dfa) {
+    for(auto df : dfa.name_map){
+        out << "(" << df.first << ", " << (df.second.is_accept() ? "ACCEPT" : "REJECT") << ") ";
+    }
+    out << "\n";
+    for(auto v : dfa.edge_map){
+        out << (v.first == dfa.start ? "*** " : "") << v.first << ": ";
+        for(auto e : v.second){
+            out << "(" << e.first << ", " << e.second << ") ";
+        }
+        out << "\n";
+    }
+    return out;
+}
+
+std::ostream& operator<<(std::ostream& out, const DFA<std::string, char>& dfa) {
+    for(auto df : dfa.name_map){
+        out << "(" << df.first << ", " << df.second.is_accept() << ") ";
+    }
+    out << "\n";
+    for(auto v : dfa.edge_map){
+        out << (v.first == dfa.start ? "*** " : "") << v.first << ": ";
+        for(auto e : v.second){
+            out << "(" << e.first << ", " << e.second << ") ";
+        }
+        out << "\n";
+    }
+    return out;
+}
