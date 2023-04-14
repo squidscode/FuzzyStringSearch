@@ -12,9 +12,9 @@
 typedef long long ll;
 
 /**
- * @brief 
+ * @brief Represents a DFA node. Holds the name of the node, and whether the node represents an accept node. 
  * 
- * @tparam N 
+ * @tparam N the type of the name.
  */
 template <typename N>
 class dfa_node{
@@ -22,32 +22,64 @@ private:
     N name;
     bool accept_flag; // is this node an accept node?
 public:
+    /**
+     * @brief Construct a new dfa node object
+     * 
+     * @param name the name of the node
+     * @param acc whether the node is accepted.
+     */
     dfa_node(N name, bool acc){
         this->name = name;
         this->accept_flag = acc;
     }
 
+    /**
+     * @brief Construct a new dfa node object
+     * 
+     */
     dfa_node(){}
 
+    /**
+     * @brief Whether the node accepts.
+     * 
+     * @return true if the node accepts.
+     * @return false if the node rejects.
+     */
     bool is_accept() {
         return this->accept_flag;
     }
 
+    /**
+     * @brief Set the accept object
+     * 
+     * @param acc whether the node accepts or rejects.
+     */
     void set_accept(bool acc){
         this->accept_flag = acc;
     }
 
+    /**
+     * @brief Get the name object
+     * 
+     * @return N the name of the node.
+     */
     N get_name(){
         return this->name;
     }
 };
 
 namespace std {
-    template <typename V> struct hash<std::pair<char, V> >
+    /**
+     * @brief A hash for a pair
+     * 
+     * @tparam T the type of the first parameter in the pair
+     * @tparam V the type of the second parameter in the pair.
+     */
+    template <typename T, typename V> struct hash<std::pair<T, V> >
     {
-        size_t operator()(const std::pair<char, V>& x) const
+        size_t operator()(const std::pair<T, V>& x) const
         {
-            return (int)(x.first);
+            return std::hash<T>{}(x.first) * std::hash<V>{}(x.second);
         }
     };
 }
@@ -55,10 +87,10 @@ namespace std {
 
 
 /**
- * @brief 
+ * @brief Represents a Deterministic-Finite-Automoton (DFA).
  * 
- * @tparam N 
- * @tparam V 
+ * @tparam N the type of the name of the nodes.
+ * @tparam V the type of the transitions.
  */
 template <typename N, typename V>
 class DFA : public FA<N, V>{
@@ -74,13 +106,26 @@ protected:
         }
     }
 public:
+    /**
+     * @brief Construct a new DFA object
+     * 
+     */
     DFA(){
         this->name_map = std::unordered_map< N, dfa_node<N> >();
         this->edge_map = std::unordered_map< N, std::unordered_map< V, N > >();
     }
 
+    /**
+     * @brief Destroy the DFA object
+     * 
+     */
     ~DFA(){}
 
+    /**
+     * @brief Adds a start state to the DFA.
+     * 
+     * @param node the name of the node. 
+     */
     void add_start(N node) override {
         if(this->start_flag){
             throw std::runtime_error("Cannot set two starts!");
@@ -91,6 +136,13 @@ public:
         this->start_flag = true;
     }
 
+    /**
+     * @brief Adds a transition from the first node to the second node through the given edge. 
+     * 
+     * @param node1 the first node.
+     * @param val the value that represents the state transition
+     * @param node2 the second node.
+     */
     void add_transition(N node1, V val, N node2) override {
         this->create_dfa(node1);
         this->create_dfa(node2);
@@ -98,17 +150,36 @@ public:
         this->edge_map[node1][val] = node2;
     }
 
+    /**
+     * @brief Checks if the transition exists on the given node. 
+     * 
+     * @param node the name of the node.
+     * @param val the value that represents the state transition.
+     * @return true if the transition exists
+     * @return false if the transition does not exist.
+     */
     bool has_transition(N node, V val) override {
         return this->name_map.count(node) && this->edge_map[node].count(val);
     }
 
+    /**
+     * @brief Adds a final state to this DFA. Note that the node must have already been 
+     * added to the DFA. 
+     * 
+     * @param node the name of the node we wish to add the final state to.
+     */
     void add_final_state(N node) override {
         if(!this->name_map.count(node))
             throw std::runtime_error("The node was not set!");
         this->name_map[node].set_accept(true);
     }
 
-    std::unordered_set<N> vertices() override {
+    /**
+     * @brief Returns the states (also known as states) in the DFA.
+     * 
+     * @return std::unordered_set<N> a set of all of the states.
+     */
+    std::unordered_set<N> states() override {
         std::unordered_set<N> ret = std::unordered_set<N>();
         for(auto vertex : this->name_map){
             ret.insert(vertex.first);
@@ -116,7 +187,14 @@ public:
         return ret;
     }
 
-    std::unordered_set<std::pair<V, N> > edges(N node) override {
+    /**
+     * @brief Returns the out transitions from the given state/node. 
+     * 
+     * @param node the name of the state/node 
+     * @return std::unordered_set<std::pair<V, N>> the set of all of the transitions (represented as
+     * a set of pairs of <transition, state>). 
+     */
+    std::unordered_set<std::pair<V, N> > transitions(N node) override {
         if(!start_flag)
             throw std::runtime_error("Start not set!");
         if(!this->name_map.count(node))
@@ -130,6 +208,14 @@ public:
         return ret;
     }
 
+    /**
+     * @brief Returns the state after starting at the given state and taking the specified state transition.
+     * This function errors if the node was not set, or if the edge does not exist.
+     *  
+     * @param node the name of the node.
+     * @param val the transition
+     * @return N the state after taking the transition
+     */
     N next_state(N node, V val) override {
         if(!this->name_map.count(node))
             throw std::runtime_error("The node was not set!");
@@ -138,12 +224,24 @@ public:
         return this->edge_map[node][val];
     }
 
-    bool is_final(const N node) override {
+    /**
+     * @brief Is the given node final? 
+     * 
+     * @param node the name of the node/state
+     * @return true if the node is a final node.
+     * @return false if the node is not a final node.
+     */
+    bool is_accept(const N node) override {
         if(!this->name_map.count(node))
             throw std::runtime_error("The node was not set!");
         return this->name_map.at(node).is_accept();
     }
 
+    /**
+     * @brief Get the start node.
+     * 
+     * @return N the start node.
+     */
     N get_start() override {
         if(!start_flag){
             throw std::runtime_error("Start not set!");
@@ -151,11 +249,29 @@ public:
         return this->start;
     }
 
-    template <class col>
-    bool run(col c){
+    /**
+     * @brief Runs this DFA with the given collection.
+     * 
+     * @tparam Collection a collection type (must have `begin` and `end` methods that return 
+     * iterators.)
+     * @param c the collection with the `begin` and `end` methods
+     * @return true if transitions result in an accept state. 
+     * @return false if the transitions result in a reject state.
+     */
+    template <class Collection>
+    bool run(Collection c){
         return this->run(c.begin(), c.end());
     }
 
+    /**
+     * @brief Runs the DFA with the given begin and end iterator. 
+     * 
+     * @tparam it the type of the iterator.
+     * @param begin the begin iterator (ie. the start of the collection)
+     * @param end the end iterator (ie. the end of the collection)
+     * @return true if the DFA ends on an accept state.
+     * @return false if the DFA ends on a reject state.
+     */
     template <class it>
     bool run(it begin, it end) {
         N st = this->start;
@@ -166,37 +282,124 @@ public:
             st = this->next_state(st, *begin);
             ++begin;
         }
-        return this->is_final(st);
+        return this->is_accept(st);
     }
 
+    /**
+     * @brief Returns the intersection between this DFA and the other DFA. 
+     * 
+     * @param dfa the other DFA.
+     * @return DFA<N,V> the intersection.
+     */
+    DFA<std::pair<N,N>,V> intersection(DFA<N,V>& dfa){
+        return this->intersection(*this, dfa);
+    }
+
+    /**
+     * @brief Computes the intersection between the two given DFAs.
+     * 
+     * @param dfa1 the first DFA
+     * @param dfa2 the second DFA.
+     * @return DFA<N, V> the intersection between the two DFAs.
+     */
+    static DFA<std::pair<N,N>, V> intersection(DFA<N,V>& dfa1, DFA<N,V>& dfa2){
+        /**
+         * The plan:
+         * - run DFS on the first DFA; 
+         * - if the transition exists, then add the pair of states to the 
+         * stack
+         */
+
+        DFA<std::pair<N,N>,V> new_dfa;
+        new_dfa.add_start({dfa1.get_start(),dfa2.get_start()});
+        std::vector<std::pair<N, N> > stk{{dfa1.get_start(), dfa2.get_start()}};
+        std::unordered_set<std::pair<N,N> > seen{};
+        while(stk.size()){
+            std::pair<N,N> next = stk.back(); stk.pop_back();
+            if(seen.count(next)) continue;
+            if(dfa1.is_accept(next.first) && dfa2.is_accept(next.second))
+                new_dfa.add_final_state(next);
+            seen.insert(next); // add the state to the seen states.
+            for(auto pts : dfa1.transitions(next.first)){
+                V transition = pts.first;
+                if(dfa2.has_transition(next.second, transition)){
+                    std::pair<N,N> next_state = {dfa1.next_state(next.first, transition), dfa2.next_state(next.second, transition)};
+                    new_dfa.add_transition(next, transition, next_state);
+                    stk.push_back(next_state);
+                }
+            }
+        }
+        return new_dfa;
+    }
+
+    /**
+     * @brief Returns all of the accept states. 
+     * 
+     * @return std::unordered_set<N> the accept states
+     */
+    std::unordered_set<N> accept_states(){
+        std::unordered_set<N> accepts;
+        for(N state : this->states()){
+            if(this->is_accept(state)){
+                accepts.insert(state);
+            }
+        }
+        return accepts;
+    }
+
+    // TODO: Complete accept_paths
+    // std::unordered_set<std::vector<V> > accept_paths(){
+    //     std::unordered_set<std::vector<V> > paths;
+    //     std::vector<N> stk{this->get_start()};
+    //     std::unordered_set<N> seen{};
+    //     std::unordered_map<N, vector<V> > path_map;
+    //     path_map[]
+    //     while(stk.size()){
+    //         N next = stk.back(); stk.pop_back();
+    //         if(seen.count(next)) continue;
+    //         if(this->is_accept(next))
+    //             paths.push();
+    //         seen.insert(next.first); // add the state to the seen states.
+    //         for(auto pts : dfa1.transitions(next.first)){
+    //             V transition = pts.first;
+    //         }
+    //     }
+    // }*/
+
+    /**
+     * @brief Compresses this DFA into a new DFA with each node name replaced with 
+     * a number (of type: long long).
+     * 
+     * @return DFA<ll, V> the compressed DFA.
+     */
     DFA<ll, V> compress_dfa(){
         return this->compress_dfa(*this);
     }
 
     /**
      * @brief Given some DFA using some naming convention (of type N), convert the DFA 
-     * to a DFA<long long, T> by encoding vertices/nodes as numbers.
+     * to a DFA<long long, T> by encoding states/nodes as numbers.
      * 
      * @tparam N the type of the node names
      * @tparam T the type of the edge names
      * @param dfa the DFA we want to convert
-     * @return DFA<ll, T> the encoded DFA.
+     * @return DFA<long long, T> the encoded DFA.
      */
     template <typename NP, typename TP>
     static DFA<ll, TP> compress_dfa(DFA<NP,TP>& dfa) {
         DFA<ll, TP> comp_dfa = DFA<ll,TP>();
         ll vertex_id = 0;
         std::unordered_map<NP, ll> m = std::unordered_map<NP, ll>();
-        for(NP vertex : dfa.vertices()){
+        for(NP vertex : dfa.states()){
             m[vertex] = vertex_id++;
         }
-        for(NP vertex : dfa.vertices()){
-            for(auto edge : dfa.edges(vertex)){
+        for(NP vertex : dfa.states()){
+            for(auto edge : dfa.transitions(vertex)){
                 comp_dfa.add_transition(m[vertex], edge.first, m[edge.second]);
             }
         }
-        for(NP vertex : dfa.vertices()){
-            if(dfa.is_final(vertex)) comp_dfa.add_final_state(m[vertex]);
+        for(NP vertex : dfa.states()){
+            if(dfa.is_accept(vertex)) comp_dfa.add_final_state(m[vertex]);
         }
         comp_dfa.add_start(m[dfa.get_start()]);
         return comp_dfa;

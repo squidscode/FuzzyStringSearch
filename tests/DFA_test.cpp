@@ -50,11 +50,11 @@ int main(){
     dfa.add_final_state("mouth");
 
     std::string cur = dfa.get_start();
-    while(!dfa.is_final(cur)){
+    while(!dfa.is_accept(cur)){
         printf("Current Node: %s\n", cur.c_str());
         char next_transition = '\0';
 
-        for(auto edge : dfa.edges(cur)){
+        for(auto edge : dfa.transitions(cur)){
             printf("Edge: %s, %c -> %s\n", cur.c_str(), edge.first, edge.second.c_str());
             next_transition = edge.first;
         }
@@ -63,7 +63,7 @@ int main(){
         }
         cur = dfa.next_state(cur, next_transition);
     }
-    if(dfa.is_final(cur)){
+    if(dfa.is_accept(cur)){
         printf("ACCEPT\n");
     }else{
         printf("REJECT\n");

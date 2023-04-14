@@ -3,32 +3,70 @@
 #include "DFA.hpp"
 #include <vector>
 
+/**
+ * @brief Represents an NFA transition.
+ * 
+ * @tparam T the type of the underlying transition. 
+ */
 template <typename T>
 class nfa_val{
 public:
-    enum __nfa_sp__ {NONE, EP, ALL};
+    enum __nfa_sp__ {NONE, EPSILON, STAR};
     __nfa_sp__ nfa_flag;
     T val;
 
+    /**
+     * @brief Construct a new nfa val object
+     * 
+     * @param flag the flag of the transition (allows us to construct an EPSILON or an
+     * STAR).
+     */
     nfa_val(__nfa_sp__ flag){
         this->nfa_flag = flag;
     }
 
+    /**
+     * @brief Construct a new nfa val object
+     * 
+     * @param val the value of the transition (used for all other types of 
+     * transitions, other than EPSILON and STAR)
+     */
     nfa_val(T val){
         this->nfa_flag = NONE;
         this->val = val;
     }
 
+    /**
+     * @brief The copy constructor for a transition of type T.
+     * 
+     * @param val the value that we want to copy.
+     * @return const T& this transition
+     */
     const T& operator=(const T& val) {
         this->val = val;
         this->nfa_flag = NONE;
         return val;
     }
 
+    /**
+     * @brief Allows us to static cast the transition to a value of
+     * type T (assumes that this transition is not an EPSILON or a STAR). 
+     * 
+     * @return T the value of the transition.
+     */
     operator T() const {
         return val;
     }
 
+    /**
+     * @brief The equals operator. NOTE: We always assume that the
+     * other nfa_val is not equal to this nfa_val because, when stored in a
+     * dictionary or a set, we do not want the nfa_vals to coallese. 
+     * 
+     * @param other the other nfa_val.
+     * @return true if the nfa_val is equal to this one
+     * @return false of the nfa_val is not equal to this one
+     */
     bool operator==(const nfa_val<T>& other) const {
         return false;
     }
@@ -53,13 +91,13 @@ namespace std {
         }
     };
 
-    template <typename N, typename V> struct hash<std::pair<N, V> >
-    {
-        size_t operator()(const std::pair<N, V>& x) const
-        {
-            return hash<N>{}(x.first) * hash<V>{}(x.second);
-        }
-    };
+    // template <typename N, typename V> struct hash<std::pair<N, V> >
+    // {
+    //     size_t operator()(const std::pair<N, V>& x) const
+    //     {
+    //         return hash<N>{}(x.first) * hash<V>{}(x.second);
+    //     }
+    // };
 
     // template <typename N, typename V> struct hash<std::pair<nfa_val<N>, V> >
     // {
@@ -95,9 +133,9 @@ protected:
     static NFA<N,T> remove_star(NFA<N,T>& nfa, it dict_begin, it dict_end) {
         NFA<N,T> new_nfa = NFA<N,T>();
         new_nfa.add_start(nfa.get_start());
-        for(auto vertex : nfa.vertices()){
-            for(auto edge : nfa.edges(vertex)){
-                if(edge.first.nfa_flag == nfa_val<T>::ALL){
+        for(auto vertex : nfa.states()){
+            for(auto edge : nfa.transitions(vertex)){
+                if(edge.first.nfa_flag == nfa_val<T>::STAR){
                     for(it begin = dict_begin; begin != dict_end; ++begin){
                         new_nfa.add_transition(vertex, *begin, edge.second);
                     }
@@ -107,8 +145,8 @@ protected:
                 
             }
         }
-        for(auto vertex : nfa.vertices()){
-            if(nfa.is_final(vertex)) new_nfa.add_final_state(vertex);
+        for(auto vertex : nfa.states()){
+            if(nfa.is_accept(vertex)) new_nfa.add_final_state(vertex);
         }
         return new_nfa;
     }
@@ -123,27 +161,27 @@ protected:
     static NFA<std::unordered_set<N>,T> remove_epsilon(NFA<N,T>& nfa){
         /**
          * The algorithm for removing epsilons from the NFA is as follows:
-         * 1. Run DFS through all of the vertices and add the edges 
+         * 1. Run DFS through all of the states and add the transitions 
          * 2. 1-to-1 matching except, when the vertex that we are visiting has an epsilon edge
-         * 3. If an epsilon edge exists, then we DFS through all epsilon edges and add that to the 
+         * 3. If an epsilon edge exists, then we DFS through all epsilon transitions and add that to the 
          * unordered set of "reachable states".
          */
 
-        // Create an directed map of all vertices connected by an epsilon
+        // Create an directed map of all states connected by an epsilon
         std::unordered_multimap<N,N> epsilon_edges = {};
         for(auto edge : nfa.edge_map){
             for(auto ed2 : edge.second){
-                assert(ed2.first.nfa_flag != nfa_val<T>::ALL); // check that all stars have been taken out.
-                if(ed2.first.nfa_flag == nfa_val<T>::EP){
+                assert(ed2.first.nfa_flag != nfa_val<T>::STAR); // check that all stars have been taken out.
+                if(ed2.first.nfa_flag == nfa_val<T>::EPSILON){
                     epsilon_edges.insert({edge.first, ed2.second});
                 }
             }
         }
 
-        // Create a map of the vertex to the set of all of the vertices we
+        // Create a map of the vertex to the set of all of the states we
         // can get to by DFS through epsilons.
         std::unordered_map<N,std::unordered_set<N>> vertex_map = {};
-        for(auto vertex : nfa.vertices()){
+        for(auto vertex : nfa.states()){
             std::vector<N> verts;
             verts.push_back(vertex);
             std::unordered_set<N> seen = {};
@@ -173,14 +211,14 @@ protected:
                 seen.insert(next);
                 std::unordered_set<T> valid_edges;
                 for(N node : next){
-                    for(auto edge : nfa.edges(node)){
+                    for(auto edge : nfa.transitions(node)){
                         valid_edges.insert(edge.first);
                     }
                 }
                 for(T edge_val : valid_edges){
                     std::unordered_set<N> con = {};
                     for(N node : next){
-                        for(auto edge : nfa.edges(node)){
+                        for(auto edge : nfa.transitions(node)){
                             if(edge.first.nfa_flag != nfa_val<T>::NONE) continue;
                             if((T) edge.first == edge_val){
                                 con.insert(vertex_map[edge.second].begin(), vertex_map[edge.second].end());
@@ -189,7 +227,7 @@ protected:
                     }
                     ret_nfa.add_transition(next, edge_val, con);
                     for(N node : con){
-                        if(nfa.is_final(node)){
+                        if(nfa.is_accept(node)){
                             ret_nfa.add_final_state(con);
                             break;
                         }
@@ -199,7 +237,7 @@ protected:
             }
         }
         for(N node : vertex_map[nfa.get_start()]){
-            if(nfa.is_final(node)){
+            if(nfa.is_accept(node)){
                 ret_nfa.add_final_state(vertex_map[nfa.get_start()]);
                 break;
             }
@@ -219,25 +257,49 @@ public:
     static DFA<N,T> replace_nfa_vals(NFA<N,T>& nfa){
         DFA<N,T> new_dfa = DFA<N,T>();
         new_dfa.add_start(nfa.start);
-        for(auto vertex : nfa.vertices())
-            for(auto edge : nfa.edges(vertex))
+        for(auto vertex : nfa.states())
+            for(auto edge : nfa.transitions(vertex))
                 new_dfa.add_transition(vertex, (T) edge.first, edge.second);
-        for(auto vertex : nfa.vertices())
-            if(nfa.is_final(vertex))
+        for(auto vertex : nfa.states())
+            if(nfa.is_accept(vertex))
                 new_dfa.add_final_state(vertex);
         return new_dfa;
     }
 
+    /**
+     * @brief Converts this NFA into a DFA.
+     * 
+     * @tparam col the type of the collection
+     * @param dict a collection of transitions that represent the STAR transition.
+     * @return DFA<std::unordered_set<N>, T> the converted NFA.
+     */
     template <class col>
     DFA<std::unordered_set<N>, T> convert_to_dfa(col dict){
         return this->convert_to_dfa(*this, dict.begin(), dict.end());
     }
 
+    /**
+     * @brief Converts this NFA into a DFA. 
+     * 
+     * @tparam it the type of iterator.
+     * @param dict_begin the beginning of the alphabet.
+     * @param dict_end the end of the alphabet.
+     * @return DFA<std::unordered_set<N>, T> the converted NFA.
+     */
     template <class it>
     DFA<std::unordered_set<N>, T> convert_to_dfa(it dict_begin, it dict_end){
         return this->convert_to_dfa(*this, dict_begin, dict_end);
     }
 
+    /**
+     * @brief Converts the given NFA into a DFA.
+     * 
+     * @tparam it the type of the iterator
+     * @param nfa the NFA.
+     * @param dict_begin the beginning of the alphabet
+     * @param dict_end the end of the alphabet.
+     * @return DFA<std::unordered_set<N>, T> the converted NFA.
+     */
     template <class it>
     static DFA<std::unordered_set<N>, T> convert_to_dfa(NFA<N,T>& nfa, it dict_begin, it dict_end){
         NFA<N,T> nfa_1 = remove_star(nfa, dict_begin, dict_end);
