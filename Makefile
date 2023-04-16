@@ -8,13 +8,14 @@ OBJ_FILES:=$(patsubst $(SRC_DIR)/%.hpp,$(OBJ_DIR)/%.o,$(SRC_FILES))
 TEST_DIR=tests
 TEST_FILES:=$(wildcard $(TEST_DIR)/*.cpp)
 BIN_DIR=bin
-MAIN_FILES=word_autocorrect
+MAIN_FILES=word_autocorrect document_search
 MAIN_BIN=$(patsubst %,$(BIN_DIR)/%,$(MAIN_FILES))
 TEST_BIN:=$(subst $(TEST_DIR),$(BIN_DIR),$(patsubst %.cpp, %, $(TEST_FILES)))
 
 all: $(MAIN_BIN)
 
-$(MAIN_BIN) : $(shell find $(SRC_DIR) -name "*.cpp") $(SRC_FILES)
+$(MAIN_BIN) : $(SRC_FILES) $(shell find $(SRC_DIR) -name "*.cpp")
+	@# $(shell find $(SRC_DIR) -name "*.cpp")
 	@# TMP=`echo $@ | sed s/$(BIN_DIR)/$(SRC_DIR)/g`
 	$(GCC) $(FLAGS) -O2 -o $@ `find $(SRC_DIR) -name "$(shell echo $@.cpp | sed s#$(BIN_DIR)/##g)"`
 
