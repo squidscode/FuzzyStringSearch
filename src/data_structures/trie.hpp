@@ -10,8 +10,6 @@
  * 
  */
 class trie : public DFA<std::string, char> {
-private:
-    std::unordered_set<char> alphabet;
 public:
     /**
      * @brief Construct a new trie object
@@ -54,14 +52,5 @@ public:
      */
     DFA<std::string, char> operator()(){
         return *this;
-    }
-
-    /**
-     * @brief Get the alphabet set.
-     * 
-     * @return std::unordered_set<char> 
-     */
-    std::unordered_set<char> get_alphabet(){
-        return this->alphabet;
     }
 };

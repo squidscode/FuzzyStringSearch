@@ -15,6 +15,9 @@
 #include <cctype>
 #include <locale>
 #include <chrono>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 // Macros:
 #define dprintf(...)    if(e.debug) printf(__VA_ARGS__)
@@ -124,27 +127,55 @@ void begin_search_loop(env e){
   size_t len = 0;
   ssize_t read;
 
+  // Path string constructions:
+  std::string sfx_path = e.file_path;
+  sfx_path.insert(sfx_path.rfind('/'), std::string("/.cache"));
+  sfx_path = sfx_path.replace(sfx_path.begin() + sfx_path.rfind('.'), sfx_path.end(), ".sfx");
+  std::string tmp = sfx_path;
+  std::string dir_path = tmp.replace(tmp.begin() + tmp.rfind('/'), tmp.end(), "");  
+
+  DFA<ll, char> compressed_dict;
+  std::unordered_set<char> alphabet;
+  suffix_tree doc;
+
   FILE* fs = fopen(e.file_path, "r");
   if(fs == NULL){
     fprintf(stderr, "ERROR: File error! Check if the file exists and if reads are allowed.\n");
     exit(1);
   }
   printf("Loading ... "); fflush(stdout);
-  suffix_tree doc(e.file_path, e.chunk_size);
+
+  if(fopen(sfx_path.c_str(), "r") == NULL){
+    printf("[no cache found] "); fflush(stdout);
+    doc = suffix_tree(e.file_path, e.chunk_size);
+    alphabet = doc.get_alphabet();
+    compressed_dict = doc.compress_dfa();
+    if(e.save_trie){  // If we want to save the trie.
+      // Create the '.cache' folder if not already there
+      struct stat st{0};
+      if(stat(dir_path.c_str(), &st) == -1) {
+        mkdir(dir_path.c_str(), 0700);
+      }
+
+      // Save all information to that file.
+      std::ofstream of; of.open(sfx_path.c_str(), std::ofstream::binary);
+      serialize(of, compressed_dict); // add the entire dict.
+      of.close();
+    }
+  }else{
+    printf("[cache found] "); fflush(stdout);
+    doc = suffix_tree(e.file_path, e.chunk_size, false);
+    alphabet = doc.get_alphabet();
+    std::ifstream ifs(sfx_path, std::ifstream::binary);
+    deserialize(ifs, compressed_dict);
+    ifs.close();
+  }
   printf(" Done!\n"); 
   cprintf("> "); fflush(stdout);
   fclose(fs);
 
-  if(e.save_trie){
-    std::ofstream of; of.open("suffix_trie.txt");
-    of << doc; // add the entire dict.
-    of.close();
-  }
-
   // Alphabet construction:
-  std::unordered_set<char> alphabet = doc.get_alphabet();
 
-  DFA<ll, char> compressed_dict = doc.compress_dfa();
   while(getline(&line, &len, stdin) != -1){ // while lines can be read:
     char word[MAX_WORD] = ""; int error = 0;
     

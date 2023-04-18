@@ -1,10 +1,13 @@
 #include "../src/data_structures/FA/NFA.hpp"
 #include <string>
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <functional>
 
 #define run_test(fn, eo) run_test_fn(fn, eo, #fn, #eo)
+#define run_assert(fn)   run_test_fn(fn, true, #fn, "true")
+#define CM               ,
 
 int test_number = 1;
 int failed_tests = 0;
@@ -144,6 +147,24 @@ void run_test_suite(){
     run_test([&dfa2](){return dfa2.run(std::vector<char>{' ', '|', ' '});}, true);
     run_test([&inter](){return inter.run(std::vector<char>{' ', '|', ' '});}, false);
 
+    std::ofstream of("out2.dfa", std::ofstream::binary);
+    serialize(of, unicorn);
+    of.close();
+
+    std::ifstream is("out2.dfa", std::istream::binary);
+    DFA<ll,char> unicorn_cpy; deserialize(is, unicorn_cpy);
+    is.close();
+
+    std::cout << "\nTesting serialize and deserialize:\n";
+    run_assert([&unicorn CM &unicorn_cpy](){auto v = std::vector<char>{}; return unicorn.run(v) == unicorn_cpy.run(v);});
+    run_assert([&unicorn CM &unicorn_cpy](){auto v = std::vector<char>{'u'}; return unicorn.run(v) == unicorn_cpy.run(v);});
+    run_assert([&unicorn CM &unicorn_cpy](){auto v = std::vector<char>{'u' CM 'n' CM 'i'}; return unicorn.run(v) == unicorn_cpy.run(v);});
+    run_assert([&unicorn CM &unicorn_cpy](){auto v = std::vector<char>{'u' CM 'n' CM 'i' CM 'c' CM 'o' CM 'r' CM 'n'};return unicorn.run(v) == unicorn_cpy.run(v);});
+    run_assert([&unicorn CM &unicorn_cpy](){auto v = std::vector<char>{'u' CM 'n' CM 'c' CM 'i' CM 'o' CM 'r' CM 'n'};return unicorn.run(v) == unicorn_cpy.run(v);}); // swap!
+    run_assert([&unicorn CM &unicorn_cpy](){auto v = std::vector<char>{'u' CM 'i' CM 'r' CM 'n'};return unicorn.run(v) == unicorn_cpy.run(v);});
+    run_assert([&unicorn CM &unicorn_cpy](){auto v = std::vector<char>{'i' CM 'r' CM 'n'};return unicorn.run(v) == unicorn_cpy.run(v);});
+    run_assert([&unicorn CM &unicorn_cpy](){auto v = std::vector<char>{'c' CM 'o' CM 'n'};return unicorn.run(v) == unicorn_cpy.run(v);});
+    run_assert([&unicorn CM &unicorn_cpy](){auto v = std::vector<char>{'u' CM 'u' CM 'n'};return unicorn.run(v) == unicorn_cpy.run(v);});
 
     print_test_results();
 }

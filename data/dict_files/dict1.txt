@@ -1,7 +1,10 @@
 hello
 there
 this
-file
+algorithm
 searches
 fuzzy
-oooooocooooool
+strings
+isn't
+that
+cool?
