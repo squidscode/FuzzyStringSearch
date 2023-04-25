@@ -16,7 +16,7 @@ private:
 public:
     suffix_tree() : trie{} {}
 
-    suffix_tree(std::string path, ll max_suffix, bool app_insert=true) : trie{} {
+    void load_file(std::string path, ll max_suffix, bool app_insert=true) {
         FILE *f = fopen(path.c_str(), "r");
         if(f == NULL){
             throw std::runtime_error("Cannot open file!");
