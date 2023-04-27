@@ -47,7 +47,7 @@ typedef struct env_t {
   char* file_path;
   bool debug{false};
   bool save_trie{false};
-  bool cli{false};
+  bool cli{true};
 } env;
 
 
@@ -110,16 +110,15 @@ void begin_search_loop(env e){
   cprintf("> "); fflush(stdout);
   fclose(fs);
 
-  if(e.save_trie){
-    std::ofstream of; of.open("trie.txt");
-    of << dict; // add the entire dict.
-    of.close();
-  }
-
   // Alphabet construction:
   std::unordered_set<char> alphabet = dict.get_alphabet();
-
   DFA<ll, char> compressed_dict = dict.compress_dfa();
+
+  if(e.save_trie){
+    std::ofstream of; of.open("trie.txt");
+    serialize(of, compressed_dict);
+    of.close();
+  }
   while(getline(&line, &len, stdin) != -1){ // while lines can be read:
     char word[MAX_WORD] = ""; int error = 0;
     

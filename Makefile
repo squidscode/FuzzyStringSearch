@@ -8,7 +8,7 @@ OBJ_FILES:=$(patsubst $(SRC_DIR)/%.hpp,$(OBJ_DIR)/%.o,$(SRC_FILES))
 TEST_DIR=tests
 TEST_FILES:=$(wildcard $(TEST_DIR)/*.cpp)
 BIN_DIR=bin
-MAIN_FILES=word_autocorrect document_search
+MAIN_FILES=word_search document_search
 MAIN_BIN=$(patsubst %,$(BIN_DIR)/%,$(MAIN_FILES))
 TEST_BIN:=$(subst $(TEST_DIR),$(BIN_DIR),$(patsubst %.cpp, %, $(TEST_FILES)))
 
