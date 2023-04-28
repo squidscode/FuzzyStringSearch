@@ -1,8 +1,8 @@
 # Fuzzy String Search
 ## Description
-This project is a general purpose C++ library for fuzzy-string-searching. Currently it supports loading a dictionary searching AND document searching. This project only supports *levenschtein distance* searching (ie. given a string or word, find all results that are **n** errors away from the search), but progress is being made to incorporate other forms of edit distance. 
+This project is a general purpose C++ library for fuzzy-string-searching. Currently it supports dictionary searching and document searching. This project only supports *levenschtein distance* searching (ie. given a string or word, find all results that are **n** errors away from the search), other distance metrics are yet to be implemented. 
 
-To demonstrate this functionality, I have included two executables that work on dictionary files and document files. 
+To demonstrate this functionality, I have included two executables that work on dictionary files and document files (ie. '.txt' files). 
 
 ### Word Search Command Line Interface
 
@@ -42,4 +42,21 @@ Loading ..................................... Done!
 > "good day" 1
 (glood, wood, goof, goad, lood, god, good, gowd, gool, mood, goon, geod, goo, bood, pood, goos, goods, rood, goog, gold, glod, goop, food, gond, goody, gook, hood)
 (dal, day, may, dap, dey, lay, bay, dak, ay, das, nay, dag, hay, dau, dat, jay, daw, fay, dab, days, dah, gay, pay, dam, davy, way, dry, dy, aday, cay, dar, dae, dan, say, dazy, dao, ray, tay, dray, kay, yday, da, dad, yay)
+```
+
+If we save the file before loading it, the program detects that a cache has already been created, and it automatically deserializes and loads the cached trie. This is considerably faster than reconstructing the trie from a dictionary.
+```
+$ time echo "" | bin/word_search data/dict_files/words.txt -s
+Loading ..................................... Done!
+> 
+real    0m10.558s
+user    0m10.041s
+sys     0m0.489s
+
+$ time echo "" | bin/word_search data/dict_files/words.txt
+Loading  Done!
+> 
+real    0m1.739s
+user    0m1.581s
+sys     0m0.136s
 ```

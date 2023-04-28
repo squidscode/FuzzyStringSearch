@@ -15,6 +15,10 @@
 #include <cctype>
 #include <locale>
 #include <chrono>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <stdlib.h>
 
 // Macros:
 #define dprintf(...)    if(e.debug) printf(__VA_ARGS__)
@@ -126,6 +130,14 @@ void begin_search_loop(env e){
   
 
   if(e.save_trie && !cache_found){
+    std::string dir_path = trie_path;
+    dir_path = dir_path.substr(0, dir_path.rfind('/'));
+    // Create the '.cache' folder if not already there
+    struct stat st{0};
+    if(stat(dir_path.c_str(), &st) == -1) {
+      mkdir(dir_path.c_str(), 0700);
+    }
+
     std::ofstream of; of.open(trie_path.c_str());
     serialize(of, compressed_dict);
     of.close();
