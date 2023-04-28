@@ -187,8 +187,13 @@ void help(env& _env_, int& flag_pos, char* argv[]){
     "usage: word_search [-d | --debug] [-s | --save] [-h | --help] FILE_NAME\n\n"\
     "Builds a suffix tree out of the given dictionary file (the file MUST be newline separated).\n\n"\
     "  d : print debug information [for developer use only]\n"\
-    "  s : save the file in a `trie.bin` file\n"\
-    "  h : print this help message\n"
+    "  s : forces a file read and saves the trie in a `.cache` directory\n"\
+    "  h : print this help message\n\n"\
+    "There are three ways to search for a word in the provided dictionary via the command line interface:\n\n"\
+    "  > WORD                      : searches for the word in the dictionary with 0 errors\n"\
+    "  > WORD N                    : searches for the word in the dictionary with N errors\n"\
+    "  > \"WORD_1 WORD_2 ...\" N     : searches for each of the words with N errors\n"\
+    "  > 'WORD' N                  : searches for the word (without escaping spaces) with N errors\n" 
     );
   exit(0);
 }
