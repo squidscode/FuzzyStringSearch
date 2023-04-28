@@ -1,5 +1,4 @@
 # Fuzzy String Search
-## Description
 This project is a general purpose C++ library for fuzzy-string-searching. Currently it supports dictionary searching and document searching. This project only supports *levenschtein distance* searching (ie. given a string or word, find all results that are **n** errors away from the search), other distance metrics are yet to be implemented. 
 
 To demonstrate this functionality, I have included two executables that work on dictionary files and document files (ie. '.txt' files). 
