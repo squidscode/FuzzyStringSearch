@@ -28,6 +28,7 @@
 #define MAX_WORD        25
 #define MAX_STRING      256
 
+// Overloading hash for vector:
 namespace std{
   template <typename T> struct hash<std::vector<T> >
   {
@@ -44,12 +45,11 @@ namespace std{
 
 // The environment template
 typedef struct env_t {
-  char* file_path;
+  char* file_path{NULL};
   bool debug{false};
   bool save_trie{false};
   bool cli{true};
 } env;
-
 
 void computation(env& e, DFA<ll, char>& compressed_dict, std::unordered_set<char>& alphabet, char* word, int& error){
   dprintf("READ: %s, %d\n", word, error);
@@ -86,39 +86,51 @@ void computation(env& e, DFA<ll, char>& compressed_dict, std::unordered_set<char
 void begin_search_loop(env e){
   // Construct a dict trie:
   trie dict;
+  std::string trie_path = e.file_path;
+  trie_path.insert(trie_path.rfind('/'), std::string("/.cache"));
+  trie_path = trie_path.replace(trie_path.begin() + trie_path.rfind('.'), trie_path.end(), ".trie");
   char * line = NULL;
   size_t len = 0;
   ssize_t read;
   int LOADING_INTERVAL = 10000;
   int dict_size = 0;
-
+  DFA<ll, char> compressed_dict;
 
   FILE* fs = fopen(e.file_path, "r");
   if(fs == NULL){
     fprintf(stderr, "ERROR: File error! Check if the file exists and if reads are allowed.\n");
     exit(1);
   }
+
   printf("Loading ");
-  while((read = getline(&line, &len, fs)) != -1){
-    std::string s = line;
-    dprintf("line read from file: %s\n", s.substr(0, s.size() - 1).c_str()); fflush(stdout);
-    if(strcmp(line, "\n") == 0) continue;
-    dict.insert((trim(s), s));
-    if(!e.debug && ++dict_size % LOADING_INTERVAL == 0) (dict_size %= LOADING_INTERVAL, printf("."), fflush(stdout));
+  bool cache_found = fopen(trie_path.c_str(), "r") != NULL;
+  if(e.save_trie || !cache_found){ // if we want to save the trie, then we must load the file from the source
+    while((read = getline(&line, &len, fs)) != -1){
+      std::string s = line;
+      dprintf("line read from file: %s\n", s.substr(0, s.size() - 1).c_str()); fflush(stdout);
+      if(strcmp(line, "\n") == 0) continue;
+      dict.insert((trim(s), s));
+      if(!e.debug && ++dict_size % LOADING_INTERVAL == 0) (dict_size %= LOADING_INTERVAL, printf("."), fflush(stdout));
+    }
+    compressed_dict = dict.compress_dfa();
+  }else{
+    std::ifstream ifs(trie_path.c_str());
+    deserialize(ifs, compressed_dict);
   }
   printf(" Done!\n"); 
   cprintf("> "); fflush(stdout);
   fclose(fs);
 
   // Alphabet construction:
-  std::unordered_set<char> alphabet = dict.get_alphabet();
-  DFA<ll, char> compressed_dict = dict.compress_dfa();
+  std::unordered_set<char> alphabet = compressed_dict.get_alphabet();
+  
 
-  if(e.save_trie){
-    std::ofstream of; of.open("trie.txt");
+  if(e.save_trie && !cache_found){
+    std::ofstream of; of.open(trie_path.c_str());
     serialize(of, compressed_dict);
     of.close();
   }
+
   while(getline(&line, &len, stdin) != -1){ // while lines can be read:
     char word[MAX_WORD] = ""; int error = 0;
     
@@ -170,15 +182,27 @@ void command_line_interface(env& _env_, int& flag_pos, char* argv[]){
   _env_.cli = true;
 }
 
+void help(env& _env_, int& flag_pos, char* argv[]){
+  printf(
+    "usage: word_search [-d | --debug] [-s | --save] [-h | --help] FILE_NAME\n\n"\
+    "Builds a suffix tree out of the given dictionary file (the file MUST be newline separated).\n\n"\
+    "  d : print debug information [for developer use only]\n"\
+    "  s : save the file in a `trie.bin` file\n"\
+    "  h : print this help message\n"
+    );
+  exit(0);
+}
+
 // the main driver
 int main(int argc, char* argv[]){
   env main_env{};
   std::unordered_map<std::string, std::function<void(env&,int&,char**)> > commands;
   commands["-d"] = debug_switch;
   commands["--debug"] = debug_switch;
-  commands["--cli"] = command_line_interface;
   commands["-s"] = save_trie;
   commands["--save"] = save_trie;
+  commands["-h"] = help;
+  commands["--help"] = help;
   int st = 1;
   int pos = 0;
   while(st < argc){
@@ -190,12 +214,20 @@ int main(int argc, char* argv[]){
           main_env.file_path = argv[st]; // the filepath
           break;
         default:
-          fprintf(stderr, "ERROR: Default case for position argument called: %d\n", pos);
+          fprintf(stderr, "ERROR: Invalid # of position arguments provided. Use \"--help\""\
+            " to display correct usage.\n");
           exit(1);
       }
       ++pos;
     }
     ++st;
   }
+
+  if(main_env.file_path == NULL){ // if we haven't set the file_path
+    printf("ERROR: Positional argument FILE_PATH not provided. Use \"--help\""\
+      " to display correct usage.\n");
+    exit(1);
+  }
+
   begin_search_loop(main_env);
 }

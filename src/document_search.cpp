@@ -232,7 +232,7 @@ void begin_search_loop(env& e){
 
   initialize_paths(e, e.file_path);
 
-  if(fopen(sfx_path.c_str(), "r") == NULL){
+  if(e.save_trie || (sfx_path.c_str(), "r") == NULL){ // if we want to resave the file, then force a complete file read.
     printf("[No cache found] Loading ..."); fflush(stdout);
     doc.load_file(e.file_path, e.chunk_size);
     alphabet = doc.get_alphabet();
