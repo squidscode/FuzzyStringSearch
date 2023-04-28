@@ -46,14 +46,14 @@ Loading ..................................... Done!
 
 If we save the file before loading it, the program detects that a cache has already been created, and it automatically deserializes and loads the cached trie. This is considerably faster than reconstructing the trie from a dictionary.
 ```
-$ time echo "" | bin/word_search data/dict_files/words.txt -s
+$ time echo -n "" | bin/word_search data/dict_files/words.txt -s
 Loading ..................................... Done!
 > 
 real    0m10.558s
 user    0m10.041s
 sys     0m0.489s
 
-$ time echo "" | bin/word_search data/dict_files/words.txt
+$ time echo -n "" | bin/word_search data/dict_files/words.txt
 Loading  Done!
 > 
 real    0m1.739s
