@@ -52,7 +52,7 @@ namespace std{
 
 // The environment template
 typedef struct env_t {
-  char* file_path;
+  char* file_path{NULL};
   bool debug{false};
   bool save_trie{false};
   bool cli{true};             // Assume that we want to use the CLI display by default. 
@@ -314,21 +314,53 @@ void command_line_interface(env& _env_, int& flag_pos, char* argv[]){
   _env_.cli = true;
 }
 
+int nargs;
 void change_chunk_size(env& _env_, int& flag_pos, char* argv[]){
+  if(flag_pos + 1 >= nargs){
+    fprintf(stderr, "Chunk size must be specified after the -c or --chunk flag!\n");
+    exit(1);
+  }
   _env_.chunk_size = atoi(argv[++flag_pos]);
+}
+
+void help(env& _env_, int& flag_pos, char* argv[]){
+  printf(
+    "usage: document_search [-d | --debug] [-s | --save] [-c | --chunk N]\n"\
+    "                       [-h | --help] [FILE_NAME]\n\n"\
+    "Builds a suffix tree out of the given document (if provided). If no file\n"\
+    "name is provided, then file mode is activated and the user can load and\n"\
+    "save files via the `load` and `save` commands. Then, it allows the user to\n"\
+    "search for strings in the document with the given levenschtein error.\n\n"\
+    "  d : print debug information [for developer use only]\n"\
+    "  s : forces a file read and saves the trie in a `.cache` directory\n"\
+    "  c : the size of the chunks used in the suffix tree (a larger chunk\n"\
+    "      size results in more preprocessing time and memory consumption)\n"\
+    "  h : print this help message\n\n"\
+    "There are three ways to search in the provided file via the command line\n"\
+    "interface:\n\n"\
+    "  > WORD                      : searches for the word in the document with 0 errors\n"\
+    "  > WORD N                    : searches for the word in the document with N errors\n"\
+    "  > \"WORD_1 WORD_2 ...\" N     : searches for each of the words with N errors\n"\
+    "  > 'WORD' N                  : searches for the word (without escaping spaces)\n"\
+    "                                with N errors\n" 
+    );
+  exit(0);
 }
 
 int main(int argc, char* argv[]){
   env main_env{}; 
+  nargs = argc;
   main_env.file_path = new char[1];
   strcpy(main_env.file_path, "");
   std::unordered_map<std::string, std::function<void(env&,int&,char**)> > commands;
   commands["-d"] = debug_switch;
   commands["--debug"] = debug_switch;
-  commands["--cli"] = command_line_interface;
   commands["-s"] = save_trie;
   commands["--save"] = save_trie;
+  commands["-c"] = change_chunk_size;
   commands["--chunk"] = change_chunk_size;
+  commands["-h"] = help;
+  commands["--help"] = help;
   int st = 1;
   int pos = 0;
   while(st < argc){
@@ -340,12 +372,14 @@ int main(int argc, char* argv[]){
           main_env.file_path = argv[st]; // the filepath
           break;
         default:
-          fprintf(stderr, "ERROR: Default case for position argument called: %d\n", pos);
+          fprintf(stderr, "ERROR: Invalid # of position arguments provided. Use \"--help\""\
+            " to display correct usage.\n");
           exit(1);
       }
       ++pos;
     }
     ++st;
   }
+
   begin_search_loop(main_env);
 }
