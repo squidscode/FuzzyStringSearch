@@ -2,6 +2,7 @@
 #include "data_structures/FA/NFA.hpp"
 #include "data_structures/FA/DFA.hpp"
 #include "data_structures/trie.hpp"
+#include "data_structures/FA/encoding_util.hpp"
 #include "util/trim.cpp"
 #include <iostream>
 #include <sstream>

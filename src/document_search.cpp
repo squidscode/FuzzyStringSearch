@@ -2,6 +2,7 @@
 #include "data_structures/FA/NFA.hpp"
 #include "data_structures/FA/DFA.hpp"
 #include "data_structures/suffix_tree.hpp"
+#include "data_structures/FA/encoding_util.hpp"
 #include "util/trim.cpp"
 #include <iostream>
 #include <sstream>
@@ -232,7 +233,7 @@ void begin_search_loop(env& e){
 
   initialize_paths(e, e.file_path);
 
-  if(e.save_trie || (sfx_path.c_str(), "r") == NULL){ // if we want to resave the file, then force a complete file read.
+  if(e.save_trie || fopen(sfx_path.c_str(), "r") == NULL){ // if we want to resave the file, then force a complete file read.
     printf("[No cache found] Loading ..."); fflush(stdout);
     doc.load_file(e.file_path, e.chunk_size);
     alphabet = doc.get_alphabet();

@@ -1,4 +1,5 @@
 #include "../src/data_structures/FA/NFA.hpp"
+#include "../src/data_structures/FA/encoding_util.hpp"
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -9,6 +10,7 @@
 #define run_assert(fn)   run_test_fn(fn, true, #fn, "true")
 #define CM               ,
 
+const char* tmp_file = "out2.dfa";
 int test_number = 1;
 int failed_tests = 0;
 std::vector<int> failed_test_numbers = {};
@@ -147,11 +149,11 @@ void run_test_suite(){
     run_test([&dfa2](){return dfa2.run(std::vector<char>{' ', '|', ' '});}, true);
     run_test([&inter](){return inter.run(std::vector<char>{' ', '|', ' '});}, false);
 
-    std::ofstream of("out2.dfa", std::ofstream::binary);
+    std::ofstream of(tmp_file, std::ofstream::binary);
     serialize(of, unicorn);
     of.close();
 
-    std::ifstream is("out2.dfa", std::istream::binary);
+    std::ifstream is(tmp_file, std::istream::binary);
     DFA<ll,char> unicorn_cpy; deserialize(is, unicorn_cpy);
     is.close();
 
@@ -165,6 +167,27 @@ void run_test_suite(){
     run_assert([&unicorn CM &unicorn_cpy](){auto v = std::vector<char>{'i' CM 'r' CM 'n'};return unicorn.run(v) == unicorn_cpy.run(v);});
     run_assert([&unicorn CM &unicorn_cpy](){auto v = std::vector<char>{'c' CM 'o' CM 'n'};return unicorn.run(v) == unicorn_cpy.run(v);});
     run_assert([&unicorn CM &unicorn_cpy](){auto v = std::vector<char>{'u' CM 'u' CM 'n'};return unicorn.run(v) == unicorn_cpy.run(v);});
+
+    std::fstream f(tmp_file, std::fstream::binary | std::fstream::in | std::fstream::out);
+    normalize<char>(f);
+    f.close();
+
+    is = std::ifstream(tmp_file, std::istream::binary);
+    deserialize(is, unicorn_cpy);
+    is.close();
+
+    std::cout << "\nTesting serialize + normalize and deserialize:\n";
+    run_assert([&unicorn CM &unicorn_cpy](){auto v = std::vector<char>{}; return unicorn.run(v) == unicorn_cpy.run(v);});
+    run_assert([&unicorn CM &unicorn_cpy](){auto v = std::vector<char>{'u'}; return unicorn.run(v) == unicorn_cpy.run(v);});
+    run_assert([&unicorn CM &unicorn_cpy](){auto v = std::vector<char>{'u' CM 'n' CM 'i'}; return unicorn.run(v) == unicorn_cpy.run(v);});
+    run_assert([&unicorn CM &unicorn_cpy](){auto v = std::vector<char>{'u' CM 'n' CM 'i' CM 'c' CM 'o' CM 'r' CM 'n'};return unicorn.run(v) == unicorn_cpy.run(v);});
+    run_assert([&unicorn CM &unicorn_cpy](){auto v = std::vector<char>{'u' CM 'n' CM 'c' CM 'i' CM 'o' CM 'r' CM 'n'};return unicorn.run(v) == unicorn_cpy.run(v);}); // swap!
+    run_assert([&unicorn CM &unicorn_cpy](){auto v = std::vector<char>{'u' CM 'i' CM 'r' CM 'n'};return unicorn.run(v) == unicorn_cpy.run(v);});
+    run_assert([&unicorn CM &unicorn_cpy](){auto v = std::vector<char>{'i' CM 'r' CM 'n'};return unicorn.run(v) == unicorn_cpy.run(v);});
+    run_assert([&unicorn CM &unicorn_cpy](){auto v = std::vector<char>{'c' CM 'o' CM 'n'};return unicorn.run(v) == unicorn_cpy.run(v);});
+    run_assert([&unicorn CM &unicorn_cpy](){auto v = std::vector<char>{'u' CM 'u' CM 'n'};return unicorn.run(v) == unicorn_cpy.run(v);});
+
+    remove(tmp_file);
 
     print_test_results();
 }
