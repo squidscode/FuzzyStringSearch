@@ -92,3 +92,13 @@ interface:
   > 'WORD' N                  : searches for the word (without escaping 
                                 spaces) with N errors
 ```
+
+A query using the document_search binary will print out the line number and the column that the match is associated with. 
+```
+$ bin/document_search data/docs/frankenstein.txt
+[No cache found] Loading ... Done!
+> assert
+asserted omnipo      [line 1138, col 44]
+assertion again      [line 6068, col 27]
+assertion; when      [line 6051, col 1]
+```

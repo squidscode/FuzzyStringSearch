@@ -20,7 +20,6 @@ public:
         this->add_transition({acc,i}, c, {acc + c,i});
         this->add_transition({acc,i}, nfa_val<char>::EPSILON, {acc+c,i+1}); // delete
         this->add_transition({acc,i}, nfa_val<char>::STAR, {acc,i+1}); // insertion
-        this->add_transition({acc,i}, nfa_val<char>::STAR, {acc+c,i+1}); // subst
         acc += c;
       }
       this->add_transition({acc,i}, nfa_val<char>::STAR, {acc,i+1}); // insertion (at the end of the word)
