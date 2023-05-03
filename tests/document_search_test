@@ -1,0 +1,76 @@
+#! /Library/Frameworks/Python.framework/Versions/3.10/bin/python3
+
+import unittest, os, sys
+
+TEST_DOC_PATH = "/Users/Siddhant/Desktop/Github/FuzzyStringSearch/tests/data/test_document.txt"
+document = []
+
+class SearchTestCases(unittest.TestCase):
+  def __init__(self, write_fd : int, read_f, search_query : tuple[str, int]):
+    self.wr = write_fd
+    self.rd = read_f
+    self.search_query = search_query
+    
+  def test_query(self):
+    os.write(self.wr, bytes(f'{self.search_query[0]} {self.search_query[1]}\n\n'))
+    first = True
+    while line := self.rd.readline():
+      if line == '> \n':
+        break
+      else:
+        if first:
+          line.remove('> ')
+          first = False
+        
+        print(line)
+    # TODO: Add testing functionality!!
+
+
+def suite(write_fd, read_f, search_queries):
+  suite = unittest.TestSuite()
+  for q in search_queries:
+    suite.addTest(SearchTestCases(write_fd, read_f, q))
+  return suite
+
+def load_file():
+  global document
+  with open(TEST_DOC_PATH) as fd:
+    while line := fd.readline():
+      document.append(line)
+
+def check_argv():
+  fname = __file__[__file__.rindex('/')+1:]
+  print()
+  if len(sys.argv) != 2:
+    print("Invalid number of arguments provided.")
+    print(f"Correct usage: {fname} PATH_TO_EXECUTABLE PATH_TO_DOCUMENT")
+    exit(1)
+  if open(sys.argv[1], 'r') == None:
+    print(f"No such file exists, check permissions for file: '{sys.argv[1]}'")
+    exit(1)  
+
+def main():
+  load_file()
+  check_argv()
+  r, w = os.pipe()
+  rb, wb = os.pipe()
+  binf, dataf = sys.argv[1], TEST_DOC_PATH
+  if (f := os.fork()) == 0:  # we are the child
+    os.dup2(r, sys.stdin.fileno())    # read from pipe #1
+    os.dup2(wb, sys.stdout.fileno())  # write to pipe #2
+    os.close(r)
+    os.close(w)
+    os.close(rb)
+    os.close(wb)
+    os.execvp(binf, [binf, dataf])  # assuming that the first argument is the path to the file.
+  else:       # we are the parent
+    os.close(r); os.close(wb)
+    read_file = os.fdopen(rb)
+    runner = unittest.TextTestRunner()
+    queries = []
+    queries.append(('Lorem', 0))
+    runner.run(suite(w, read_file, queries))
+    exit(0)
+
+if __name__ == '__main__':
+  main()
