@@ -4,32 +4,84 @@ import unittest, os, sys
 
 TEST_DOC_PATH = "/Users/Siddhant/Desktop/Github/FuzzyStringSearch/tests/data/test_document.txt"
 document = []
+CHUNK_SIZE = 15
+tests = [ ('Lorem', None) , ('Lorem', 0) , 
+          ('lorem', None) , ('lorem', 0) , ('lorem', 1), ('lorem', 2),
+          ('lorgem', 0), ('lorgem', 1), ('lorgem', 2), ('lorgem', 3),
+          ('\'In quis dolor\'', 0), ('\'in quis dalor\'', 2)]
+          
+r, w = os.pipe()
+rb, wb = os.pipe()
+MAX_INT = int(1e9)
 
-class SearchTestCases(unittest.TestCase):
-  def __init__(self, write_fd : int, read_f, search_query : tuple[str, int]):
-    self.wr = write_fd
-    self.rd = read_f
-    self.search_query = search_query
-    
-  def test_query(self):
-    os.write(self.wr, bytes(f'{self.search_query[0]} {self.search_query[1]}\n\n'))
+def levenschtein_distance(s1: str, s2: str, acc_dist:int=0, max_distance:int=5) -> int:
+  if len(s1) == 0 or len(s2) == 0:
+    return max(len(s1), len(s2))
+  if s1[0] == s2[0]:
+    return levenschtein_distance(s1[1:], s2[1:], acc_dist, max_distance)
+  elif acc_dist == max_distance:
+    return MAX_INT
+  else:
+    return 1 + min(levenschtein_distance(s1, s2[1:], acc_dist+1, max_distance),
+      levenschtein_distance(s1[1:], s2, acc_dist+1, max_distance),
+      levenschtein_distance(s1[1:], s2[1:], acc_dist+1, max_distance))
+
+
+class SearchTestCases(unittest.TestCase):    
+  def test_queries(self):
+    self.wrfd = w; self.rdf = os.fdopen(rb)
+    # Wait for a 'Done!' line
+    while line := self.rdf.readline():
+      if line.index('Done!') != -1: break
+    for query in tests:
+      with self.subTest(query):
+        self.test_query(query)
+  
+  def test_query(self, query):
+    error_str = f' {query[1]}' if query[1] != None else ''
+    search_str = f'{query[0]}{error_str}\n\n'
+    os.write(self.wrfd, bytes(search_str, encoding='utf8'))
     first = True
-    while line := self.rd.readline():
+    print("Checking query:", query)
+    while line := self.rdf.readline():
       if line == '> \n':
         break
       else:
         if first:
-          line.remove('> ')
+          line = line[2:]
           first = False
-        
-        print(line)
-    # TODO: Add testing functionality!!
+        print("Response:", line, end="")
+        if line.count('[') == 0: return
+        match, rgt                = line.split('[')
+        match                     = match[0:CHUNK_SIZE]
+        line_number, col_number = rgt.split(',')
+        line_number = int(line_number.replace('line ', ''))
+        col_number = int(col_number.replace(' col ', '').replace(']', ''))
+        # print("Response:", match, (line_number, col_number))
+        doc_string = document[line_number-1][col_number-1:col_number+CHUNK_SIZE-1]
+        # print("At document:", doc_string)
+        tmp_line_num = line_number
+        while len(doc_string) != CHUNK_SIZE and tmp_line_num < len(document):
+          doc_string = doc_string[:-1:1]
+          doc_string += "\\" + document[line_number][0:CHUNK_SIZE-len(doc_string)-1]
+          tmp_line_num += 1
+        self.assertEquals(match, doc_string,
+          'Check if the positions in document are correct.')
+        search_str = query[0]
+        if search_str[0] == '\'' and search_str[-1] == '\'': search_str = search_str[1:-1:1]
+        error = query[1] if query[1] != None else 0
+        min_error_distance = MAX_INT
+        for i in range(-error, error+1,1):
+          result = levenschtein_distance(search_str, match[0:len(search_str)+i], max_distance=error)
+          print(f"levenschtein_distance({search_str}, {match[0:len(search_str)+i]}) =", result)
+          min_error_distance = min(min_error_distance, result)
+        self.assertTrue(min_error_distance <= error)
 
 
-def suite(write_fd, read_f, search_queries):
+
+def suite():
   suite = unittest.TestSuite()
-  for q in search_queries:
-    suite.addTest(SearchTestCases(write_fd, read_f, q))
+  suite.addTest(SearchTestCases('test_queries'))
   return suite
 
 def load_file():
@@ -40,10 +92,9 @@ def load_file():
 
 def check_argv():
   fname = __file__[__file__.rindex('/')+1:]
-  print()
   if len(sys.argv) != 2:
     print("Invalid number of arguments provided.")
-    print(f"Correct usage: {fname} PATH_TO_EXECUTABLE PATH_TO_DOCUMENT")
+    print(f"Correct usage: {fname} PATH_TO_EXECUTABLE")
     exit(1)
   if open(sys.argv[1], 'r') == None:
     print(f"No such file exists, check permissions for file: '{sys.argv[1]}'")
@@ -52,9 +103,8 @@ def check_argv():
 def main():
   load_file()
   check_argv()
-  r, w = os.pipe()
-  rb, wb = os.pipe()
   binf, dataf = sys.argv[1], TEST_DOC_PATH
+  print(f"executing: {binf} {dataf}")
   if (f := os.fork()) == 0:  # we are the child
     os.dup2(r, sys.stdin.fileno())    # read from pipe #1
     os.dup2(wb, sys.stdout.fileno())  # write to pipe #2
@@ -62,15 +112,11 @@ def main():
     os.close(w)
     os.close(rb)
     os.close(wb)
-    os.execvp(binf, [binf, dataf])  # assuming that the first argument is the path to the file.
+    os.execvp(binf, [binf, dataf, '--chunk', str(CHUNK_SIZE)])  # assuming that the first argument is the path to the file.
   else:       # we are the parent
     os.close(r); os.close(wb)
-    read_file = os.fdopen(rb)
     runner = unittest.TextTestRunner()
-    queries = []
-    queries.append(('Lorem', 0))
-    runner.run(suite(w, read_file, queries))
-    exit(0)
+    runner.run(suite())
 
 if __name__ == '__main__':
   main()
