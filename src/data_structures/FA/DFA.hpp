@@ -295,6 +295,41 @@ public:
     }
 
     /**
+     * @brief Follows the DFA through all of the transitions given in the collection until no more transitions can be
+     * made, at which point it will return the name of the node that the DFA ends at.
+     * 
+     * @tparam Collection a collection type (must have a `begin` and `end` iterator method)
+     * @param c the collection of transitions.
+     * @return N the name of the node we end at.
+     */
+    template <class Collection>
+    N follow(Collection c){
+        return this->run(c.begin(), c.end());
+    }
+
+    /**
+     * @brief Follows the DFA through all of the transitions given in the collection until no more transitions can be
+     * made, at which point it will return the name of the node that the DFA ends at.
+     * 
+     * @tparam it a forward iterator through all of the transitions.
+     * @param begin the begin iterator to the transitions.
+     * @param end the end iterator to the transitions.
+     * @return N the name of the node we end at.
+     */
+    template <class it>
+    N follow(it begin, it end) {
+        N st = this->start;
+        while(begin != end){
+            if(!this->has_transition(st, *begin)){
+                return st;
+            }
+            st = this->next_state(st, *begin);
+            ++begin;
+        }
+        return st;
+    }
+
+    /**
      * @brief Returns the intersection between this DFA and the other DFA. 
      * 
      * @param dfa the other DFA.
@@ -361,7 +396,7 @@ public:
      * @brief Run a simple DFS algorithm on this DFA to find some of the
      * accept paths (does not find cycle paths). Assume that the DFA is a DAG.
      * 
-     * @return std::unordered_set<std::vector<V> > 
+     * @return std::unordered_set<std::vector<V> > all of the accepts paths.
      */
     std::unordered_set<std::vector<V> > accept_paths(){
         std::unordered_set<std::vector<V> > paths;

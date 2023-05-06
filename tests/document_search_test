@@ -8,7 +8,8 @@ CHUNK_SIZE = 15
 tests = [ ('Lorem', None) , ('Lorem', 0) , 
           ('lorem', None) , ('lorem', 0) , ('lorem', 1), ('lorem', 2),
           ('lorgem', 0), ('lorgem', 1), ('lorgem', 2), ('lorgem', 3),
-          ('\'In quis dolor\'', 0), ('\'in quis dalor\'', 2)]
+          ('\'In quis dolor\'', 0), ('\'in quis dalor\'', 2), ('vel', 0),
+          ('abc', 0), ('abc', 1), ('abc', 2)]
           
 r, w = os.pipe()
 rb, wb = os.pipe()
@@ -51,7 +52,7 @@ class SearchTestCases(unittest.TestCase):
           line = line[2:]
           first = False
         print("Response:", line, end="")
-        if line.count('[') == 0: return
+        if line.count('[') != 1: return   # TODO test multiple document locations.
         match, rgt                = line.split('[')
         match                     = match[0:CHUNK_SIZE]
         line_number, col_number = rgt.split(',')
@@ -63,8 +64,9 @@ class SearchTestCases(unittest.TestCase):
         tmp_line_num = line_number
         while len(doc_string) != CHUNK_SIZE and tmp_line_num < len(document):
           doc_string = doc_string[:-1:1]
-          doc_string += "\\" + document[line_number][0:CHUNK_SIZE-len(doc_string)-1]
+          doc_string += "\\" + document[tmp_line_num][0:CHUNK_SIZE-len(doc_string)-1]
           tmp_line_num += 1
+        if doc_string[-1] == '\n': doc_string = doc_string[:-1:1] + '\\'
         self.assertEquals(match, doc_string,
           'Check if the positions in document are correct.')
         search_str = query[0]
@@ -73,7 +75,7 @@ class SearchTestCases(unittest.TestCase):
         min_error_distance = MAX_INT
         for i in range(-error, error+1,1):
           result = levenschtein_distance(search_str, match[0:len(search_str)+i], max_distance=error)
-          print(f"levenschtein_distance({search_str}, {match[0:len(search_str)+i]}) =", result)
+          # print(f"levenschtein_distance({search_str}, {match[0:len(search_str)+i]}) =", result)
           min_error_distance = min(min_error_distance, result)
         self.assertTrue(min_error_distance <= error)
 
