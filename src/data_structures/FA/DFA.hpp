@@ -304,7 +304,7 @@ public:
      */
     template <class Collection>
     N follow(Collection c){
-        return this->run(c.begin(), c.end());
+        return this->follow(c.begin(), c.end());
     }
 
     /**
@@ -321,7 +321,7 @@ public:
         N st = this->start;
         while(begin != end){
             if(!this->has_transition(st, *begin)){
-                return st;
+                throw std::runtime_error("...");
             }
             st = this->next_state(st, *begin);
             ++begin;
@@ -471,8 +471,8 @@ public:
     friend std::ostream& operator<<(std::ostream& os, const DFA<N, V>& dt);
     friend std::istream& operator>>(std::istream& os, const DFA<N, V>& dt);
 
-    friend std::ostream& serialize(std::ostream& os, const DFA<N, V>& dt);
-    friend std::istream& deserialize(std::istream& os, const DFA<N, V>& dt);
+    friend std::ostream& serialize(std::ostream& os, DFA<N, V>& dt);
+    friend std::istream& deserialize(std::istream& os, DFA<N, V>& dt);
 };
 
 // Standard output for compressed DFA:

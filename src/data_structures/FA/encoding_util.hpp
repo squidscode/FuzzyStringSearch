@@ -14,7 +14,7 @@
 
 // The types of state.
 enum ENCODING_VERSION:char {V1_1=2, NORMALIZED=1};
-enum STATE_TYPE:char {reject=0, accept=1, start=2};
+enum STATE_TYPE:char {reject=0b0, accept=0b1, start=0b10, end_read=0b100};
 const ll eos = LONG_MAX;
 
 // Serialize and deserialize for compressed DFAs 
@@ -48,6 +48,7 @@ std::ostream& serialize(std::ostream& os, DFA<long long, V>& dt){
         }
         os.write((char*)&eos, sizeof(ll));
     }
+    os.put(STATE_TYPE::end_read); // write end_read
     return os;
 }
 
@@ -57,7 +58,7 @@ std::istream& deserialize(std::istream& is, DFA<long long, V>& dt){
     dt = DFA<ll, V>(); // create a new DFA.
     char st;           // the state_type
     assert((is.get(st), st) & ENCODING_VERSION::V1_1);   // we only support encoding version 1.1
-    while(is.get(st)){ // while we can get a state_type character,
+    while(is.get(st) && st != STATE_TYPE::end_read){ // while we can get a state_type character and it is not end_read
         ll v, t; is.read((char*) &v, sizeof(ll));
         if(st & STATE_TYPE::start) dt.add_start(v);
         while((is.read((char*) &t, sizeof(ll)), t != eos)){
@@ -111,3 +112,4 @@ std::fstream& normalize(std::fstream& fs) {
 
   return fs;
 }
+

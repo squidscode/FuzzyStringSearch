@@ -120,7 +120,7 @@ void begin_search_loop(env e){
     compressed_dict = dict.compress_dfa();
   }else{
     std::ifstream ifs(trie_path.c_str());
-    deserialize(ifs, compressed_dict);
+    deserialize<char>(ifs, compressed_dict);
   }
   printf(" Done!\n"); 
   cprintf("> "); fflush(stdout);
@@ -140,7 +140,7 @@ void begin_search_loop(env e){
     }
 
     std::ofstream of; of.open(trie_path.c_str());
-    serialize(of, compressed_dict);
+    serialize<char>(of, compressed_dict);
     of.close();
   }
 

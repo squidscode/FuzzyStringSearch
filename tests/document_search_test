@@ -2,7 +2,7 @@
 
 import unittest, os, sys
 
-TEST_DOC_PATH = "/Users/Siddhant/Desktop/Github/FuzzyStringSearch/tests/data/test_document.txt"
+TEST_DOC_PATH = "/Users/Siddhant/Desktop/Projects/FuzzyStringSearch/tests/data/test_document.txt"
 document = []
 CHUNK_SIZE = 15
 tests = [ ('Lorem', None) , ('Lorem', 0) , 

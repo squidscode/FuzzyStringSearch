@@ -1,8 +1,8 @@
 #include "data_structures/levenshtein_nfa.hpp"
 #include "data_structures/FA/NFA.hpp"
 #include "data_structures/FA/DFA.hpp"
-#include "data_structures/suffix_tree.hpp"
-#include "data_structures/FA/encoding_util.hpp"
+#include "data_structures/suffix_tree/suffix_tree.hpp"
+#include "data_structures/suffix_tree/suffix_tree_encoding.hpp"
 #include "util/trim.cpp"
 #include <iostream>
 #include <sstream>
@@ -64,9 +64,9 @@ typedef struct env_t {
 
 std::string dir_path;
 std::string sfx_path;
-DFA<ll, char> compressed_dict;
+compressed_suffix_tree compressed_dict;
 
-void computation(env& e, suffix_tree& st, DFA<ll, char>& compressed_dict, std::unordered_set<char>& alphabet, char* word, int& error){
+void computation(env& e, compressed_suffix_tree& compressed_dict, std::unordered_set<char>& alphabet, char* word, int& error){
   dprintf("READ: %s, %d\n", word, error);
   if(strlen(word) == 0) {printf("\n"); return;};
   if(strlen(word) > e.chunk_size) {printf("'%s' is longer than the chunk size [%i]\n", word, e.chunk_size); return;}
@@ -111,13 +111,13 @@ void computation(env& e, suffix_tree& st, DFA<ll, char>& compressed_dict, std::u
 
     ifn(true){
       if(e.lc_mode){
-        std::unordered_set<std::pair<ll,ll> > ind = st.get_lc(needle);
+        std::unordered_set<std::pair<ll,ll> > ind = compressed_dict.get_lc(needle);
         for(auto i : ind){
           sprintf(buf, " [line %lli, col %lli]", i.first, i.second);
           printf("%s", buf);
         }
       }else{
-        std::unordered_set<ll> ind = st.get_indices(needle);
+        std::unordered_set<ll> ind = compressed_dict.get_indices(needle);
         for(auto i : ind){
           sprintf(buf, " [%lli]", i);
           printf("%s", buf);
@@ -152,7 +152,7 @@ void save_file(env& e){
 
   // Save all information to that file.
   std::ofstream of; of.open(sfx_path.c_str(), std::ofstream::binary);
-  serialize(of, compressed_dict); // add the entire dict.
+  serialize_suffix_tree(of, compressed_dict); // add the entire dict.
   of.close();
 }
 
@@ -247,7 +247,7 @@ void begin_search_loop(env& e){
 
       // Save all information to that file.
       std::ofstream of; of.open(sfx_path.c_str(), std::ofstream::binary);
-      serialize(of, compressed_dict); // add the entire dict.
+      serialize_suffix_tree(of, compressed_dict); // add the entire dict.
       of.close();
     }
   }else{
@@ -255,7 +255,7 @@ void begin_search_loop(env& e){
     doc.load_file(e.file_path, e.chunk_size, false);
     alphabet = doc.get_alphabet();
     std::ifstream ifs(sfx_path, std::ifstream::binary);
-    deserialize(ifs, compressed_dict);
+    deserialize_suffix_tree(ifs, compressed_dict);
     ifs.close();
   }
   printf(" Done!\n"); 
@@ -273,7 +273,7 @@ void begin_search_loop(env& e){
       if(i != strlen(line)){
         sscanf(line+i+1, " %d", &error);
         line[i] = '\0';
-        computation(e, doc, compressed_dict, alphabet, line+1, error);
+        computation(e, compressed_dict, alphabet, line+1, error);
       }else{
         printf("Error: A WORD message must end with a '!\n");
       }
@@ -287,7 +287,7 @@ void begin_search_loop(env& e){
         strcpy(buf, line+1);
         char* tok = strtok(buf, " ");
         while(tok){
-          computation(e, doc, compressed_dict, alphabet, tok, error);
+          computation(e, compressed_dict, alphabet, tok, error);
           tok = strtok(NULL, " ");
         }
       }else{
@@ -295,7 +295,7 @@ void begin_search_loop(env& e){
       }
     }else{
       sscanf(line, "%25s %d", word, &error);
-      computation(e, doc, compressed_dict, alphabet, word, error);
+      computation(e, compressed_dict, alphabet, word, error);
     }
 
     // for next line:

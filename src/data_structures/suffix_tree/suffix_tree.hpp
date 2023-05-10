@@ -1,6 +1,6 @@
 #pragma once
 
-#include "trie.hpp"
+#include "../trie.hpp"
 #include <string>
 #include <list>
 #include <unordered_map>
@@ -32,9 +32,12 @@ class compressed_suffix_tree : public DFA<ll, char> {
 protected:
     std::unordered_multimap<ll, doc_position_t> position_map;
 public:
-    compressed_suffix_tree(trie& trie, std::unordered_multimap<std::string, doc_position_t>& positions) : DFA<ll,char>{trie.compress_dfa()} {
+    compressed_suffix_tree() : DFA<ll,char>{} {}
+
+    compressed_suffix_tree(DFA<std::string, char>& trie, std::unordered_multimap<std::string, doc_position_t>& positions) : DFA<ll,char>{trie.compress_dfa()} {
         for(auto s : positions){
-            position_map.insert({this->follow(s.first), s.second});
+            ll ind;
+            position_map.insert({(ind = this->follow(s.first)), s.second});
         }
     }
 
@@ -57,6 +60,9 @@ public:
         }
         return ret;
     }
+
+    friend std::ostream& serialize_suffix_tree(std::ostream& os, compressed_suffix_tree& dt);
+    friend std::istream& deserialize_suffix_tree(std::istream& is, compressed_suffix_tree& dt);
 };
 
 
