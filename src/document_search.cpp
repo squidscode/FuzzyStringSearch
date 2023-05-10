@@ -252,10 +252,9 @@ void begin_search_loop(env& e){
     }
   }else{
     printf("[Cache found] Loading ..."); fflush(stdout);
-    doc.load_file(e.file_path, e.chunk_size, false);
-    alphabet = doc.get_alphabet();
     std::ifstream ifs(sfx_path, std::ifstream::binary);
     deserialize_suffix_tree(ifs, compressed_dict);
+    alphabet = compressed_dict.get_alphabet();
     ifs.close();
   }
   printf(" Done!\n"); 
