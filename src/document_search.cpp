@@ -3,6 +3,7 @@
 #include "data_structures/FA/DFA.hpp"
 #include "data_structures/suffix_tree/suffix_tree.hpp"
 #include "data_structures/suffix_tree/suffix_tree_encoding.hpp"
+#include "data_structures/suffix_tree/doc_position_serialize.hpp"
 #include "util/trim.cpp"
 #include <iostream>
 #include <sstream>

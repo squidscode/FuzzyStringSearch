@@ -96,16 +96,6 @@ public:
                 }
                 ind++;
             }
-            // end of file, decrease insert sizes until we have inserted all strings.
-            // while(l.size() > 0){
-            //     std::string s(l.begin(), l.end());
-            //     if(app_insert) this->insert(s);
-            //     this->position_map.insert({s,{ind, line, col}});
-            //     l.front() == '\n' ? col = 1 : col++;
-            //     l.front() == '\n' ? line++ : line;
-            //     l.pop_front();
-            //     ind++;
-            // }
         }
     }
 
