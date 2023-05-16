@@ -323,10 +323,14 @@ void change_chunk_size(env& _env_, int& flag_pos, char* argv[]){
   _env_.chunk_size = atoi(argv[++flag_pos]);
 }
 
+void index_mode(env& _env_, int& flag_pos, char* argv[]) {
+  _env_.lc_mode = false;
+}
+
 void help(env& _env_, int& flag_pos, char* argv[]){
   printf(
     "usage: document_search [-d | --debug] [-s | --save] [-c | --chunk N]\n"\
-    "                       [-h | --help] [FILE_NAME]\n\n"\
+    "                       [-h | --help]  [-i | --index] [FILE_NAME]\n\n"\
     "Builds a suffix tree out of the given document (if provided). If no file\n"\
     "name is provided, then file mode is activated and the user can load and\n"\
     "save files via the `load` and `save` commands. Then, it allows the user to\n"\
@@ -335,6 +339,7 @@ void help(env& _env_, int& flag_pos, char* argv[]){
     "  s : forces a file read and saves the trie in a `.cache` directory\n"\
     "  c : the size of the chunks used in the suffix tree (a larger chunk\n"\
     "      size results in more preprocessing time and memory consumption)\n"\
+    "  i : show index rather than line/column values\n"\
     "  h : print this help message\n\n"\
     "There are three ways to search in the provided file via the command line\n"\
     "interface:\n\n"\
@@ -361,6 +366,8 @@ int main(int argc, char* argv[]){
   commands["--chunk"] = change_chunk_size;
   commands["-h"] = help;
   commands["--help"] = help;
+  commands["-i"] = index_mode;
+  commands["--index"] = index_mode;
   int st = 1;
   int pos = 0;
   while(st < argc){

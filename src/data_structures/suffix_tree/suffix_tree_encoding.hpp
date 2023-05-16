@@ -38,6 +38,7 @@ std::istream& deserialize_suffix_tree(std::istream& is, compressed_suffix_tree& 
   return is;
 }
 
+// Change this code if you want to decrease the size of your serialized suffix tree file.
 std::ostream& serialize_doc_position(std::ostream& os, doc_position_t& pos) {
   os.write((char*) &pos.index, sizeof(ll));
   os.write((char*) &pos.line, sizeof(ll));
