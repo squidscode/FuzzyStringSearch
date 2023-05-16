@@ -1,0 +1,11 @@
+.vscode/*
+.gitignore
+a.out
+trie.txt
+english_words/*
+bin/*
+.DS_Store
+*/.DS_Store
+*/.cache/*
+.cache
+playground/*
